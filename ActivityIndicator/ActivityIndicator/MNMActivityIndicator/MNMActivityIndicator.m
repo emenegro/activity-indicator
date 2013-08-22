@@ -24,7 +24,20 @@
 #import "MNMActivityIndicator.h" 
 #import <QuartzCore/QuartzCore.h>
 
-static CGFloat const kMNMActivityIndicatorAnimationDuration = 1.0f;
+static CGFloat const kMNMActivityIndicatorFadeDuration = 0.3f;
+static CGFloat const kMNMActivityIndicatorRotationDuration = 1.0f;
+
+@interface MNMActivityIndicator()
+
+/**
+ * Returns the indicagor view for the given view.
+ * 
+ * @param view The view to search in.
+ * @return The indicator view, or nil if no indicator.
+ */
++ (UIView *)indicatorForView:(UIView *)view;
+
+@end
 
 @implementation MNMActivityIndicator
 
@@ -55,7 +68,8 @@ static CGFloat const kMNMActivityIndicatorAnimationDuration = 1.0f;
         
         UIImageView *indicatorView = [[UIImageView alloc] initWithImage:[UIImage imageNamed:@"indicator"]];
         [indicatorView setTranslatesAutoresizingMaskIntoConstraints:NO];
-        [containerView addSubview:indicatorView];        
+        [indicatorView setAlpha:0.0f];
+        [containerView addSubview:indicatorView];
         [containerView addConstraint:[NSLayoutConstraint constraintWithItem:indicatorView
                                                                   attribute:NSLayoutAttributeCenterX
                                                                   relatedBy:NSLayoutRelationEqual
@@ -76,9 +90,14 @@ static CGFloat const kMNMActivityIndicatorAnimationDuration = 1.0f;
         CABasicAnimation *rotationAnimation = [CABasicAnimation animationWithKeyPath:@"transform.rotation"];
         [rotationAnimation setFromValue:@0];
         [rotationAnimation setToValue:@((360 * M_PI) / 180)];
-        [rotationAnimation setDuration:kMNMActivityIndicatorAnimationDuration];
+        [rotationAnimation setDuration:kMNMActivityIndicatorRotationDuration];
         [rotationAnimation setRepeatCount:HUGE_VALF];
         [[indicatorView layer] addAnimation:rotationAnimation forKey:@"rotation"];
+        
+        [UIView animateWithDuration:kMNMActivityIndicatorFadeDuration animations:^{
+            
+            [indicatorView setAlpha:1.0f];
+        }];
     }
 }
 
@@ -91,30 +110,21 @@ static CGFloat const kMNMActivityIndicatorAnimationDuration = 1.0f;
 
 + (void)removeFromView:(UIView *)view {
     
-    if ([view isKindOfClass:[UIScrollView class]]) {
+    UIView *indicatorView = [self indicatorForView:view];
+    
+    [UIView animateWithDuration:kMNMActivityIndicatorFadeDuration animations:^{
         
-        [[[view superview] viewWithTag:[view hash]] removeFromSuperview];
+        [indicatorView setAlpha:0.0f];
         
-    } else {
+    } completion:^(BOOL finished) {
         
-        [[view viewWithTag:[view hash]] removeFromSuperview];
-    }
+        [indicatorView removeFromSuperview];
+    }];
 }
 
 + (BOOL)hasActivityIndicator:(UIView *)view {
     
-    UIView *indicator = nil;
-    
-    if ([view isKindOfClass:[UIScrollView class]]) {
-        
-        indicator = [[view superview] viewWithTag:[view hash]];
-        
-    } else {
-        
-        indicator = [view viewWithTag:[view hash]];
-    }
-    
-    return indicator != nil;
+    return [MNMActivityIndicator indicatorForView:view] != nil;
 }
 
 + (void)showGlobalActivityIndicator {
@@ -125,6 +135,24 @@ static CGFloat const kMNMActivityIndicatorAnimationDuration = 1.0f;
 + (void)hideGlobalActivityIndicator {
     
     [MNMActivityIndicator removeFromView:[[UIApplication sharedApplication] keyWindow]];
+}
+
+#pragma mark - Utils
+
++ (UIView *)indicatorForView:(UIView *)view {
+    
+    UIView *indicatorView = nil;
+    
+    if ([view isKindOfClass:[UIScrollView class]]) {
+        
+        indicatorView = [[view superview] viewWithTag:[view hash]];
+        
+    } else {
+        
+        indicatorView = [view viewWithTag:[view hash]];
+    }
+    
+    return indicatorView;
 }
 
 @end
