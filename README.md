@@ -1,4 +1,4 @@
-MNMActivityIndicator
+MNMActivityIndicator v0.1
 ==========
 
 Implementation of an activity indicator that can be put over a given view.
